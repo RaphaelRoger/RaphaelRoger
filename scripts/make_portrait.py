@@ -42,6 +42,7 @@ COLS = 90                  # below ~88 the face muddies; far above it dominates
 CLAHE_CLIP = 3.0           # higher amplifies skin texture into noise
 GAMMA = 1.0                # ramp mapping exponent
 CURVE = 1.7                # the darkening curve — the difference-maker
+DEFAULT_CROP = (108, 115, 422, 433)  # selected tight crop for the current 513x433 portrait.jpg
 CROP_BOTTOM = 0.0          # fraction to trim off the bottom (torso, chair)
 ROW_RATIO = 0.48           # monospace cells are about twice as tall as wide
 
@@ -155,7 +156,7 @@ def main():
                     help="print the ASCII to the terminal as well")
     args = ap.parse_args()
 
-    crop = None
+    crop = DEFAULT_CROP
     if args.crop:
         parts = [int(v) for v in args.crop.split(",")]
         if len(parts) != 4:
