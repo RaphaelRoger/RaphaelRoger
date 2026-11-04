@@ -1,0 +1,46 @@
+name: refresh stats
+
+# Runs once a day and on demand. The commit below is pushed with GITHUB_TOKEN,
+# and events created by GITHUB_TOKEN never start new workflow runs, so the job
+# cannot re-trigger itself.
+on:
+  schedule:
+    - cron: "30 18 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-stats
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Test the generator
+        run: python3 -m unittest discover -s tests
+
+      - name: Draw the stat graphics
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_LOGIN: ${{ github.repository_owner }}
+        run: python3 scripts/generate_stats.py
+
+      - name: Commit whatever changed
+        run: |
+          FILES="stats.svg streak.svg langs.svg hd-*.svg"
+          if [ -z "$(git status --porcelain -- $FILES)" ]; then
+            echo "no change"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- $FILES
+          git commit -m "stats: refresh profile graphics"
+          # main may have moved since checkout (a manual push mid-run)
+          git push || { git pull --rebase && git push; }
